@@ -1,7 +1,7 @@
 import time
 import requests
 
-def wait_for_server(url: str, timeout: float = 90.0, interval: float = 0.5):
+async def wait_for_server(url: str, timeout: float = 90.0, interval: float = 0.5):
 
     start = time.time()
 

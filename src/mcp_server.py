@@ -28,20 +28,17 @@ def run_in_container(cmd: str):
     return f"exit_code={result.exit_code}\n{stdout}"
 
 @mcp.tool
-def execute_tests() -> str:
-    output_path = os.path.abspath("tests")
+def execute_tests(output_path) -> str: 
     os.makedirs(output_path, exist_ok=True)
 
+    print("Running dynamic tests")
     container = docker_client.containers.run(
         image="postman/newman",
         command=[
             "run",
-            f"{output_path}/tests.json",
-            "--timeout", "60000",
-            "--timeout-request", "60000",
-            "--timeout-script", "60000",
+            "tests.json",
             "-r", "json",
-            "--reporter-json-export", "/etc/newman/report.json"
+            "--reporter-json-export", "report.json"
         ],
         volumes={
             output_path: {
@@ -51,7 +48,7 @@ def execute_tests() -> str:
         },
         working_dir="/etc/newman",
         tty=True,
-        stdin_open=True,
+        detach=True,
         remove=True
     )
 
@@ -213,5 +210,5 @@ I need you to create a full Express.js server in JavaScript with the following s
 
      Ensure that the server runs using npm start
 
-     Run the server after implementation to ensure it starts correctly.
+     Run the server after implementation using exec to ensure it starts correctly.
 """

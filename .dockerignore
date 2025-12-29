@@ -6,4 +6,3 @@ __pycache__/
 *.pyc
 */sandbox/*
 *.ipynb
-src/tests/*

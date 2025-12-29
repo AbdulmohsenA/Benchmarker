@@ -6,11 +6,14 @@ import logging
 from adapters.ollama_adapter import OllamaAdapter
 from utils import wait_for_server
 import requests
+from types import SimpleNamespace
 
 logging.basicConfig(
     level=logging.INFO,
     format='%(asctime)s [%(levelname)s] %(message)s'
 )
+
+fastmcp = Client(mcp)
 
 async def take_action(calls, messages, mcp_instance: Client):
     for call in calls:
@@ -41,8 +44,7 @@ async def agent_loop(model, messages, tools, mcp_instance, think=False):
 
 async def start_agent():
 
-    # Initialize MCP client and get tools
-    fastmcp = Client(mcp)
+    logging.info("Starting agent..")
     async with fastmcp:
         # Get the initialization data
         tools = await fastmcp.list_tools()
@@ -70,28 +72,21 @@ async def start_agent():
             logging.info(f"Final response: {last_message.content}")
             
             # Means the agent didn't run the server, running automatically:
-            await take_action([
-                Client.ToolCall(
-                    function=Client.ToolFunction(
+            func = SimpleNamespace(
+                    function=SimpleNamespace(
                         name="exec",
                         arguments={"command": "npm start"}
                     )
                 )
+            
+            logging.info(func)
+            await take_action([
+                func
             ], messages, fastmcp)
 
             done = True
-    
-    
-async def run_tests():
-    # Wait for server to be ready (timeout depends on your GPU speed, Model size, etc..)
-    wait_for_server("http://localhost:5000/health", timeout=120)
-
-    print("Server is ready, running tests...")
-
-async def main():
-    spawn_agent = asyncio.create_task(start_agent())
-    run_tests_task = asyncio.create_task(run_tests())
+ 
 
 if __name__ == "__main__":
-    main()
-    
+
+    asyncio.run(start_agent())

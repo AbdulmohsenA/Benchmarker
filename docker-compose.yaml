@@ -1,0 +1,40 @@
+version: "3.9"
+
+services:
+  ollama:
+    image: ollama/ollama
+    container_name: ollama
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities: [gpu]
+    volumes:
+      - ollama:/root/.ollama
+    ports:
+      - "11434:11434"
+    restart: unless-stopped
+
+
+  agent:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: mcp-agent
+    working_dir: /app
+    volumes:
+      - ./src:/app
+      - ./src/sandbox:/sandbox
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - PYTHONUNBUFFERED=1
+      - OLLAMA_HOST=http://ollama:11434
+    depends_on:
+      - ollama
+
+    command: python main.py
+
+volumes:
+  ollama:
+  external:
+    name: ollama
