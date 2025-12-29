@@ -1,0 +1,187 @@
+{
+  "info": {
+    "_postman_id": "a1b2c3d4-e5f6-7890-abcd-123456789000",
+    "name": "Express Server Tests",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "BASE_URL",
+      "value": "http://host.docker.internal:5000"
+    },
+    {
+      "key": "USERNAME",
+      "value": ""
+    },
+    {
+      "key": "PASSWORD",
+      "value": "testpassword123"
+    },
+    {
+      "key": "TOKEN",
+      "value": ""
+    }
+  ],
+  "item": [
+    {
+      "name": "Generate Random Username",
+      "event": [
+        {
+          "listen": "prerequest",
+          "script": {
+            "exec": [
+              "let uname = 'user_' + Math.random().toString(36).substring(2,10);",
+              "pm.collectionVariables.set('USERNAME', uname);",
+              "console.log('Generated username:', uname);"
+            ]
+          }
+        },
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Username generated', function(){",
+              "    pm.expect(pm.collectionVariables.get('USERNAME')).to.be.a('string');",
+              "});"
+            ]
+          }
+        }
+      ],
+      "request": {
+        "method": "GET",
+        "url": "{{BASE_URL}}/"
+      }
+    },
+    {
+      "name": "GET /",
+      "request": {
+        "method": "GET",
+        "url": "{{BASE_URL}}/"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', function(){",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Body contains Hello, World!', function(){",
+              "    pm.expect(pm.response.text()).to.include('Hello, World');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "GET /health",
+      "request": {
+        "method": "GET",
+        "url": "{{BASE_URL}}/health"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', function(){",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Returns JSON', function(){",
+              "    pm.response.to.be.json;",
+              "});",
+              "",
+              "let json = pm.response.json();",
+              "pm.test('status is healthy', function(){",
+              "    pm.expect(json.status).to.eql('healthy');",
+              "});"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /register",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{USERNAME}}\",\n  \"password\": \"{{PASSWORD}}\"\n}"
+        },
+        "url": "{{BASE_URL}}/register"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Register returns 200 or 201', function(){",
+              "    pm.expect([200,201]).to.include(pm.response.code);",
+              "});",
+              "",
+              "pm.test('Response is JSON', function(){",
+              "    pm.response.to.be.json;",
+              "});",
+              "",
+              "let json = pm.response.json();",
+              "",
+              "if (json.token) {",
+              "    pm.collectionVariables.set('TOKEN', json.token);",
+              "}"
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "name": "POST /login",
+      "request": {
+        "method": "POST",
+        "header": [
+          {
+            "key": "Content-Type",
+            "value": "application/json"
+          }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"username\": \"{{USERNAME}}\",\n  \"password\": \"{{PASSWORD}}\"\n}"
+        },
+        "url": "{{BASE_URL}}/login"
+      },
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status is 200', function(){",
+              "    pm.response.to.have.status(200);",
+              "});",
+              "",
+              "pm.test('Response is JSON', function(){",
+              "    pm.response.to.be.json;",
+              "});",
+              "",
+              "let json = pm.response.json();",
+              "",
+              "pm.test('Contains token field', function(){",
+              "    pm.expect(json).to.have.property('token');",
+              "});",
+              "",
+              "pm.collectionVariables.set('TOKEN', json.token);"
+            ]
+          }
+        }
+      ]
+    }
+  ]
+}

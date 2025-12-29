@@ -1,0 +1,8 @@
+*/node_modules
+*.log
+.vscode/
+.env
+__pycache__/
+*.pyc
+*/sandbox/*
+*.ipynb
