@@ -1,4 +1,3 @@
-from mcp_server import mcp
 from fastmcp import Client
 import asyncio
 import os
@@ -13,7 +12,7 @@ logging.basicConfig(
     format='%(asctime)s [%(levelname)s] %(message)s'
 )
 
-fastmcp = Client(mcp)
+fastmcp = Client("http://mcp_server:8000/mcp")
 
 async def take_action(calls, messages, mcp_instance: Client):
     for call in calls:

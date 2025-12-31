@@ -17,6 +17,6 @@ A journey of this system is as follows:
 
 ### Quality
 
-- **Seperate MCP Server**: Decouple the MCP server from the agent to be in a container
+- ~~**Seperate MCP Server**: Decouple the MCP server from the agent to be in a container~~
 - **Isolate Sandbox**: Air Gap the sandbox so the agents are limited to installing generic packages
 - **DinD**: Apply Docker-in-Docker methodology to have sandboxes created by agents using [DinD](https://hub.docker.com/_/docker)

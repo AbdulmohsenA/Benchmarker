@@ -15,6 +15,19 @@ services:
       - "11434:11434"
     restart: unless-stopped
 
+  mcp_server:
+      build: 
+        context: .
+        dockerfile: Dockerfile
+      container_name: mcp_server
+      ports:
+        - "8000:8000"
+      volumes:
+        - ./src:/app
+        - /var/run/docker.sock:/var/run/docker.sock
+      environment:
+        - PYTHONUNBUFFERED=1
+      command: python mcp_server.py
 
   agent:
     build:
@@ -31,7 +44,7 @@ services:
       - OLLAMA_HOST=http://ollama:11434
     depends_on:
       - ollama
-
+      - mcp_server
     command: python main.py
 
 volumes:

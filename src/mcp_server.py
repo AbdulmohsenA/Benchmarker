@@ -212,3 +212,6 @@ I need you to create a full Express.js server in JavaScript with the following s
 
      Run the server after implementation using exec to ensure it starts correctly.
 """
+
+if __name__ == "__main__":
+    mcp.run(transport="http", host="0.0.0.0", port=8000)
