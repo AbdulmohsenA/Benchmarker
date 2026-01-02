@@ -1,6 +1,5 @@
 {
   "info": {
-    "_postman_id": "a1b2c3d4-e5f6-7890-abcd-123456789000",
     "name": "Express Server Tests",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
@@ -15,7 +14,7 @@
     },
     {
       "key": "PASSWORD",
-      "value": "testpassword123"
+      "value": "testing43215"
     },
     {
       "key": "TOKEN",

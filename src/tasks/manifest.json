@@ -1,0 +1,10 @@
+{
+  "tasks": [
+    {
+      "id": "login-page",
+      "name": "Simple login page in Express",
+      "prompt_file": "login-page.md",
+      "collection_file": "login-page.json"
+    }
+  ]
+}
