@@ -110,7 +110,7 @@ def get_system_prompt() -> str:
 def get_task(task_number: int) -> list:
 
     task = tasks[task_number]
-    prompt_path = f"{os.path.abspath(f"tasks/prompts/{task['id']}.md")}"
+    prompt_path = f"{os.path.abspath(f"tasks/prompts/{task['name']}.md")}"
     with open(prompt_path, "r", encoding="utf-8") as file:
         prompt = file.read()
 

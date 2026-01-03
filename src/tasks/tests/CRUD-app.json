@@ -1,0 +1,81 @@
+{
+  "info": {
+    "name": "Notes API",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "item": [
+    {
+      "name": "Health Check",
+      "request": {
+        "method": "GET",
+        "url": "{{BASE_URL}}/health"
+      }
+    },
+    {
+      "name": "Create Note",
+      "request": {
+        "method": "POST",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"note\": \"Test note\"\n}"
+        },
+        "url": "{{BASE_URL}}/note"
+      }
+    },
+    {
+      "name": "Get Note",
+      "request": {
+        "method": "GET",
+        "url": {
+          "raw": "{{BASE_URL}}/note?id={{noteId}}",
+          "host": ["{{BASE_URL}}"],
+          "path": ["note"],
+          "query": [
+            { "key": "id", "value": "{{noteId}}" }
+          ]
+        }
+      }
+    },
+    {
+      "name": "Update Note",
+      "request": {
+        "method": "PUT",
+        "header": [
+          { "key": "Content-Type", "value": "application/json" }
+        ],
+        "body": {
+          "mode": "raw",
+          "raw": "{\n  \"id\": \"{{noteId}}\",\n  \"new_note\": \"Updated note text\"\n}"
+        },
+        "url": "{{BASE_URL}}/note"
+      }
+    },
+    {
+      "name": "Delete Note",
+      "request": {
+        "method": "DELETE",
+        "url": {
+          "raw": "{{BASE_URL}}/note?id={{noteId}}",
+          "host": ["{{BASE_URL}}"],
+          "path": ["note"],
+          "query": [
+            { "key": "id", "value": "{{noteId}}" }
+          ]
+        }
+      }
+    }
+  ],
+  "variable": [
+    {
+      "key": "noteId",
+      "value": ""
+    },
+    {
+      "key": "BASE_URL",
+      "value": "http://host.docker.internal:5000"
+    }
+  ]
+}

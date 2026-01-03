@@ -1,10 +1,12 @@
 {
   "tasks": [
     {
-      "id": "login-page",
-      "name": "Simple login page in Express",
-      "prompt_file": "login-page.md",
-      "collection_file": "login-page.json"
+      "name": "login-page",
+      "title": "Simple login functionality in Express"
+    },
+    {
+      "name": "CRUD-app",
+      "title": "Simple data CRUD app in Flask"
     }
   ]
 }
