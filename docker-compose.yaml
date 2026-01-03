@@ -20,12 +20,15 @@ services:
       container_name: mcp_server
       ports:
         - "8000:8000"
+        - "5679:5679"
       volumes:
         - ./src:/app
         - /var/run/docker.sock:/var/run/docker.sock
       environment:
         - PYTHONUNBUFFERED=1
       command: python mcp_server.py
+
+      # command: python -m debugpy --listen 0.0.0.0:5679 --wait-for-client mcp_server.py
 
   agent:
     build:
@@ -43,13 +46,13 @@ services:
       - ollama
       - mcp_server
 
-    command: python main.py
+    command: python agent.py 0
 
-    ## Debug Config
+    # # ## Debug Config
     # ports:
     #   - "5678:5678"  # The default port for debugpy
     # # This command starts the debugger and waits for you to attach VS Code
-    # command: python -m debugpy --listen 0.0.0.0:5678 --wait-for-client main.py
+    # command: python -m debugpy --listen 0.0.0.0:5678 --wait-for-client agent.py 0
     
 
 volumes:

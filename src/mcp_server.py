@@ -4,6 +4,8 @@ from fastmcp import FastMCP
 from fastmcp.prompts.prompt import Message
 import logging
 import json
+import select
+import time
 
 logger = logging.getLogger(__name__)
 logging.basicConfig(level=logging.INFO)
@@ -21,16 +23,65 @@ with open("./tasks/manifest.json", "r", encoding="utf-8") as file:
 
     tasks = json.load(file)['tasks']
 
-def run_in_container(cmd: str):
-    
+def run_in_container(cmd: str, timeout: int = 15):
+
     container = docker_client.containers.get(CONTAINER_NAME)
     logging.info(f"Command: {cmd}")
 
-    result = container.exec_run(
-        f"sh -c '{cmd} > /proc/1/fd/1 2>&1'", # To push it to docker logs
+    exec_id = docker_client.api.exec_create(
+        container.id,
+        f"sh -c '{cmd} 2>&1 | tee /proc/1/fd/1'",
         workdir="/app"
-    )
-    output = result.output.decode('utf-8')
+    )['Id']
+
+    # Proper logging approach
+    sock = docker_client.api.exec_start(exec_id, socket=True)
+    sock._sock.settimeout(0.1)  # Set socket timeout for non-blocking behavior
+
+    output_chunks = []
+    start_time = time.time()
+    buffer = b''
+
+    try:
+        while True:
+            elapsed = time.time() - start_time
+
+            if elapsed >= timeout:
+                output = b''.join(output_chunks).decode('utf-8', errors='replace')
+                output += "\n\n[The Process continues running in background...]"
+                logging.info(output)
+                return output
+
+            try:
+                chunk = sock._sock.recv(4096)
+                if not chunk:
+                    # No more data, process has finished
+                    break
+
+                buffer += chunk
+
+                # Parse Docker stream multiplexing format
+                # Each frame: [stream_type(1)][padding(3)][size(4)][payload(size)]
+                while len(buffer) >= 8:
+                    header = buffer[:8]
+                    stream_type = header[0]
+                    payload_size = int.from_bytes(header[4:8], byteorder='big')
+
+                    if len(buffer) < 8 + payload_size:
+                        # Not enough data yet, wait for more
+                        break
+
+                    payload = buffer[8:8 + payload_size]
+                    output_chunks.append(payload)
+                    buffer = buffer[8 + payload_size:]
+
+            except Exception:
+                # Socket timeout, continue to check elapsed time
+                continue
+    finally:
+        sock.close()
+
+    output = b''.join(output_chunks).decode('utf-8', errors='replace')
     logging.info(output)
     return output
 
@@ -51,32 +102,22 @@ def copy_to_container(src_path: str, dest_path: str = "/app"):
     container.put_archive(dest_path, tar_stream)
     return True
 
-@mcp.tool
-def execute_tests(output_path) -> str: 
-    os.makedirs(output_path, exist_ok=True)
+def get_system_prompt() -> str:
+    with open(f"./tasks/prompts/system-prompt.md", "r", encoding="utf-8") as file:
+        return file.read()
 
-    print("Running dynamic tests")
-    container = docker_client.containers.run(
-        image="postman/newman",
-        command=[
-            "run",
-            "tests.json",
-            "-r", "json",
-            "--reporter-json-export", "report.json"
-        ],
-        volumes={
-            output_path: {
-                "bind": "/etc/newman",
-                "mode": "rw"
-            }
-        },
-        working_dir="/etc/newman",
-        tty=True,
-        detach=True,
-        remove=True
-    )
+@mcp.tool()
+def get_task(task_number: int) -> list:
 
-    return f"Test report saved to {os.path.join(output_path, 'report.json')}"
+    task = tasks[task_number]
+    prompt_path = f"{os.path.abspath(f"tasks/prompts/{task['id']}.md")}"
+    with open(prompt_path, "r", encoding="utf-8") as file:
+        prompt = file.read()
+
+    return [
+    {'role':'system', 'content':get_system_prompt()},
+    {'role': 'user', 'content':prompt},
+    ]
 
 @mcp.tool
 def setup_container():
@@ -91,7 +132,7 @@ def setup_container():
         logging.info("No existing container to remove.")
 
     sandbox_container = docker_client.containers.run(
-        "node:22-slim",
+        "nikolaik/python-nodejs:python3.11-nodejs22-slim",
         name=CONTAINER_NAME,
         working_dir="/app",
         command="tail -f /dev/null", # To keep running when tty = False
@@ -121,6 +162,20 @@ def setup_container():
     return f"Fresh container created"
 
 @mcp.tool
+def terminate_container():
+    global sandbox_container
+
+    try:
+        existing_container = docker_client.containers.get(CONTAINER_NAME)
+        logging.info(f"Removing existing container: {CONTAINER_NAME}")
+        # force=True sends SIGKILL and removes the container in one go
+        existing_container.remove(force=True)
+    except docker.errors.NotFound:
+        logging.info("No existing container to remove.")
+
+    return f"Sandbox terminated successfuly"
+
+@mcp.tool
 def list_files() -> str:
     """Lists all files in the workspace."""
     files = []
@@ -135,7 +190,7 @@ def list_files() -> str:
 def read_file(path: str) -> str:
     """
     Reads the content of a file.
-    
+
     Args:
         path (str): The relative path to the file.
 
@@ -186,30 +241,6 @@ def exec(command: str) -> str:
 
     return run_in_container(command)
 
-@mcp.tool
-def exec_background(command: str) -> str:
-    """
-    Executes a long-running command in the background (detached mode).
-    Use this for starting servers (npm start, node server.js, etc.).
-    The command will continue running after this tool returns.
-
-    Args:
-        command (str): The shell command to execute in background.
-    Returns:
-        str: Confirmation message that the command was started.
-    """
-    container = docker_client.containers.get(CONTAINER_NAME)
-    logging.info(f"Starting background command: {command}")
-
-    # Run in detached mode - doesn't wait for completion
-    result = container.exec_run(
-        f"sh -c '{command} > /proc/1/fd/1 2>&1 &'",
-        workdir="/app",
-        detach=True
-    )
-
-    return f"Background process started: {command}"
-
 @mcp.tool()
 def get_container_logs(tail_lines: int = 50):
     """
@@ -225,22 +256,6 @@ def get_container_logs(tail_lines: int = 50):
     logs = container.logs(tail=tail_lines, stderr=True, stdout=True)
     return logs.decode("utf-8")
 
-def get_system_prompt() -> str:
-    with open(f"./tasks/prompts/system-prompt.md", "r", encoding="utf-8") as file:
-        return file.read()
-
-@mcp.tool()
-def get_task(task_number: int) -> list:
-
-    task = tasks[task_number]
-    prompt_path = f"{os.path.abspath(f"tasks/prompts/{task['id']}.md")}"
-    with open(prompt_path, "r", encoding="utf-8") as file:
-        prompt = file.read()
-
-    return [
-    {'role':'system', 'content':get_system_prompt()},
-    {'role': 'user', 'content':prompt},
-    ]
 
 if __name__ == "__main__":
     mcp.run(transport="sse", host="0.0.0.0", port=8000)

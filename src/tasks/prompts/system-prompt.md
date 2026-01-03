@@ -18,9 +18,6 @@ AVAILABLE TOOLS
 5) exec(command: string)
    - Executes a shell command in workspace and get their log
 
-6) exec_background(command: string)
-   - Executes a command to run in the background (e.g. run the server)
-
 GENERAL PRINCIPLES
 
 - Be deterministic and precise.
