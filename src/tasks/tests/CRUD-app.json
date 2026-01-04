@@ -1,11 +1,26 @@
 {
   "info": {
-    "name": "Notes API",
+    "name": "Notes API - Automated Tests",
     "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
   },
   "item": [
     {
       "name": "Health Check",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Status code is 200', () => pm.response.to.have.status(200));",
+              "pm.test('Response is healthy', () => {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.status).to.eql('healthy');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
       "request": {
         "method": "GET",
         "url": "{{BASE_URL}}/health"
@@ -13,69 +28,113 @@
     },
     {
       "name": "Create Note",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Note created successfully', () => pm.response.to.have.status(201));",
+              "const responseData = pm.response.json();",
+              "pm.test('Response contains ID', () => {",
+              "    pm.expect(responseData).to.have.property('id');",
+              "    pm.collectionVariables.set('noteId', responseData.id);",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
       "request": {
         "method": "POST",
-        "header": [
-          { "key": "Content-Type", "value": "application/json" }
-        ],
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"note\": \"Test note\"\n}"
+          "raw": "{\"note\": \"Test note\"}"
         },
         "url": "{{BASE_URL}}/note"
       }
     },
     {
       "name": "Get Note",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Fetched note successfully', () => pm.response.to.have.status(200));",
+              "pm.test('Correct note content returned', () => {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.note).to.include('Test note');",
+              "    pm.expect(String(jsonData.id)).to.eql(pm.collectionVariables.get('noteId'));",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
       "request": {
         "method": "GET",
         "url": {
           "raw": "{{BASE_URL}}/note?id={{noteId}}",
           "host": ["{{BASE_URL}}"],
           "path": ["note"],
-          "query": [
-            { "key": "id", "value": "{{noteId}}" }
-          ]
+          "query": [{ "key": "id", "value": "{{noteId}}" }]
         }
       }
     },
     {
       "name": "Update Note",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Note updated successfully', () => pm.response.to.have.status(200));",
+              "pm.test('Response confirms update', () => {",
+              "    const jsonData = pm.response.json();",
+              "    pm.expect(jsonData.message).to.be.a('string');",
+              "});"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
       "request": {
         "method": "PUT",
-        "header": [
-          { "key": "Content-Type", "value": "application/json" }
-        ],
+        "header": [{ "key": "Content-Type", "value": "application/json" }],
         "body": {
           "mode": "raw",
-          "raw": "{\n  \"id\": \"{{noteId}}\",\n  \"new_note\": \"Updated note text\"\n}"
+          "raw": "{\"id\": \"{{noteId}}\", \"new_note\": \"Updated note text\"}"
         },
         "url": "{{BASE_URL}}/note"
       }
     },
     {
       "name": "Delete Note",
+      "event": [
+        {
+          "listen": "test",
+          "script": {
+            "exec": [
+              "pm.test('Note deleted successfully', () => pm.response.to.have.status(200));"
+            ],
+            "type": "text/javascript"
+          }
+        }
+      ],
       "request": {
         "method": "DELETE",
         "url": {
           "raw": "{{BASE_URL}}/note?id={{noteId}}",
           "host": ["{{BASE_URL}}"],
           "path": ["note"],
-          "query": [
-            { "key": "id", "value": "{{noteId}}" }
-          ]
+          "query": [{ "key": "id", "value": "{{noteId}}" }]
         }
       }
     }
   ],
   "variable": [
-    {
-      "key": "noteId",
-      "value": ""
-    },
-    {
-      "key": "BASE_URL",
-      "value": "http://host.docker.internal:5000"
-    }
+    { "key": "noteId", "value": "" },
+    { "key": "BASE_URL", "value": "http://host.docker.internal:5000" }
   ]
 }

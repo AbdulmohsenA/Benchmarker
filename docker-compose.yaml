@@ -13,6 +13,25 @@ services:
       - "11434:11434"
     restart: unless-stopped
 
+  dashboard:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: dashboard
+    ports:
+      - "8501:8501"
+    volumes:
+      - ./src:/app
+      - /var/run/docker.sock:/var/run/docker.sock
+    environment:
+      - PYTHONUNBUFFERED=1
+      - OLLAMA_HOST=http://ollama:11434
+      - MCP_SERVER_URL=http://mcp_server:8000/sse
+    depends_on:
+      - ollama
+      - mcp_server
+    command: streamlit run main.py --server.address=0.0.0.0
+
   mcp_server:
     build:
       context: .
